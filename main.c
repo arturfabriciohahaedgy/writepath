@@ -6,10 +6,9 @@
 #include <unistd.h>
 #include <assert.h>
 
-#define FILE_CONTENTS_SIZE 5126
-#define ARGUMENT_SIZE 256
-#define IN_FLAG_VAR   0
-#define IN_FLAG_FILE  1
+#define ARGUMENT_SIZE     256
+#define IN_FLAG_VAR       0
+#define IN_FLAG_FILE      1
 
 void usage(void);
 char *shiftargs(int*, char***);
@@ -19,16 +18,15 @@ typedef struct {
     int    used;
 } GenericArray; /* generic array structure to keep track of used values*/
 
-
 void
 printarguments(GenericArray *arg)
 {
-    int i;
-    for (i = 0; i < arg->used; i++)
+    for (int i = 0; i < arg->used; i++)
 	printf("array: %s\n", arg->array[i]);
 }
 
-char *shiftargs(int *argc, char ***argv)
+char *
+shiftargs(int *argc, char ***argv)
 /* shameless copied from tsoding */
 {
     char *result;
@@ -37,6 +35,12 @@ char *shiftargs(int *argc, char ***argv)
     *argv += 1;
     *argc -= 1;
     return result;
+}
+
+void
+matchlines(FILE *file, char *vararray[], char *filearray[])
+/* TODO: Finish this function */
+{
 }
 
 void
@@ -53,9 +57,10 @@ main(int argc, char *argv[])
 {
     FILE        *targetIO;
     char        *targetfile;
-    char        filecontent[FILE_CONTENTS_SIZE];
     char        *param;
     int          state; /* if argument is on -v flag of -f flag */
+    int          nvars; /* number of variables */
+    int          nfiles; /* number of files */
     GenericArray vars;
     GenericArray files;
 
@@ -98,19 +103,22 @@ main(int argc, char *argv[])
 	}
     }
 
-    /* TODO: Get the absolute path of files and files and re-store them in the files.array[] */
-
+    nvars = sizeof(vars.array)/sizeof(vars.array[0]);
+    nfiles = sizeof(files.array)/sizeof(files.array[0]);
     printf("Target file: %s\n", targetfile);
     targetIO = fopen(targetfile, "r+");
     if (targetIO == NULL) {
 	fprintf(stderr, "ERROR: Could not open \"%s\": %s", targetfile, strerror(errno));
 	exit(1);
     } else {
+	int sizestring;
 	/* TODO: Filter output of string to match varialbes */
-	/* TODO: Write the values inside arrays to the file*/
-	fread(&filecontent, sizeof(int), sizeof(filecontent), targetIO);
+	/* TODO: Write the values inside arrays to the file */
+	
+	for (int i = 0; i < nvars; i++)
+	    matchlines(targetIO, vars.array, files.array);
 
-	printf("Conteudo: %s\n", filecontent);
+	/* printf("Tamanho: %d, Conteudo:\n%c", sizestring, filecontent[0]); */
 
 	fclose(targetIO);
     }
