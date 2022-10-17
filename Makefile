@@ -1,5 +1,5 @@
 CC = cc
-CFLAGS = -Wall -Wextra -g -pedantic
+CFLAGS = -Wall -Wextra -g -pedantic -std=c99 -pipe -O2
 
-writepath: main.c
-	${CC} ${CFLAGS} main.c -o writepath.out
+writepath: writepath.c
+	${CC} ${CFLAGS} writepath.c -o writepath.out
