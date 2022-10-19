@@ -1,4 +1,3 @@
-#include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
@@ -7,7 +6,13 @@
 #include <unistd.h>
 #include <assert.h>
 
+#ifdef __WIN32
+#include <fileapi.h>
+#endif
+
 #define ARGUMENT_SIZE     256
+#define FILE_MAX_LINE     2048
+#define FILE_MAX_PATH     256
 #define CORRECT_WORD      0
 #define WRONG_WORD        1
 #define IN_NO_FLAG        0
@@ -44,9 +49,9 @@ shiftargs(int *argc, char ***argv)
 
 int
 returnpos(FILE *targetfile, char *var)
-/* get's position of variable declaration */
+/* get position of variable declaration int *targetfile */
 {
-    char buffer[ARGUMENT_SIZE] = {0};
+    char buffer[FILE_MAX_LINE] = {0};
     char currentword[ARGUMENT_SIZE] = {0};
     int  beginword = 0; /* reseted to 0 in the for-loop everytime so the values inserted in currentword stay corrected*/
     int  state = WRONG_WORD; /* if the word matches or not the variable */
@@ -54,7 +59,7 @@ returnpos(FILE *targetfile, char *var)
     int  buflen;
 
     rewind(targetfile);
-    while (fgets(buffer, ARGUMENT_SIZE, targetfile) != NULL) {
+    while (fgets(buffer, FILE_MAX_LINE, targetfile) != NULL) {
 	buflen = strlen(buffer);
 	for (int i = 0; i < buflen; i++) {
 	    if (state != CORRECT_WORD) {
@@ -85,6 +90,23 @@ returnpos(FILE *targetfile, char *var)
 }
 
 void
+insertnewfile(FILE *targetfile, int pos, char *file)
+/* TODO: Look up how to get the absolute path of a file in windows */
+{
+    FILE *bkp;
+    int  currentpos = 0;
+    char buffer[FILE_MAX_LINE] = {0};
+    int  buflen;
+
+    rewind(targetfile);
+    bkp = fopen("backup.c", "w+");
+
+    while (fgets(buffer, FILE_MAX_LINE, targetfile) != NULL) {
+	/* TODO: Finish the loop*/
+    }
+}
+
+void
 usage(void)
 {
     fprintf(stdout, "\nUsage: writepath [FILE TO WRITE ON] [-v NAME OF VARIABLES INSIDE FILE] [-f PATH TO USED FILES]\n");    
@@ -96,9 +118,9 @@ usage(void)
 int
 main(int argc, char *argv[])
 {
-    FILE               *targetIO;
-    char               *targetfile;
-    char               *param;
+    char               *targetfile; /* file which is gonna be written in */
+    FILE               *targetIO; 
+    char               *param; /* args */
     int                 state; /* if argument is on -v flag or -f flag */
     int                 pos; /* position of variable declaration */
     struct GenericArray vars;
@@ -155,14 +177,15 @@ main(int argc, char *argv[])
     targetIO = fopen(targetfile, "r+");
     if (targetIO == NULL) {
 	fprintf(stderr, "ERROR: Could not open \"%s\": %s", targetfile, strerror(errno));
+	fclose(targetIO);
 	exit(1);
     } else {
 	for (int i = 0; i < vars.used; i++) {
             pos = returnpos(targetIO, vars.array[i]);
 	    if (pos != WRONG_WORD) {
-		/* TODO: Get absolute path of values inside "files.array" and write it on "targetfile". */
 	    } else {
 		fprintf(stderr, "ERROR: It wasn't possibile to find the variable \"%s\" inside file \"%s\".\n", vars.array[i], targetfile);
+		fclose(targetIO);
 		exit(1);
 	    }
         }
