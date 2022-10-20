@@ -5,10 +5,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <assert.h>
-
-#ifdef __WIN32
-#include <fileapi.h>
-#endif
+#include <dirent.h>
 
 #define ARGUMENT_SIZE     256
 #define FILE_MAX_LINE     2048
@@ -26,7 +23,7 @@ int returnpos(FILE *, char *);
 struct GenericArray {
     char  *array[ARGUMENT_SIZE];
     int    used;
-} ; /* generic array structure to keep track of used values*/
+}; /* generic array structure to keep track of used values*/
 
 void
 printarguments(struct GenericArray *arg)
@@ -45,6 +42,24 @@ shiftargs(int *argc, char ***argv)
     *argv += 1;
     *argc -= 1;
     return result;
+}
+
+char *
+returnpath(char *relativepath)
+{
+    char *buffer = 0;
+    buffer = (char *)malloc(FILE_MAX_PATH * sizeof(buffer));
+    #ifdef _WIN32
+    if (_fullpath(buffer, relativepath, FILE_MAX_PATH) != NULL) {
+	fprintf(stderr, "Could not open the target file at \"%s\".\n", relativepath);
+	exit(1);
+    }
+    else 
+	return buffer;
+    #elif __unix__ || __APPLE__
+    realpath(relativepath, buffer);
+    return buffer;
+    #endif
 }
 
 int
@@ -90,18 +105,19 @@ returnpos(FILE *targetfile, char *var)
 }
 
 void
-insertnewfile(FILE *targetfile, int pos, char *file)
+insertnewfile(FILE *target, char *targetpath, int pos, char *file)
 /* TODO: Look up how to get the absolute path of a file in windows */
 {
+    opendir(targetpath);
     FILE *bkp;
     int  currentpos = 0;
     char buffer[FILE_MAX_LINE] = {0};
     int  buflen;
 
-    rewind(targetfile);
+    rewind(target);
     bkp = fopen("backup.c", "w+");
 
-    while (fgets(buffer, FILE_MAX_LINE, targetfile) != NULL) {
+    while (fgets(buffer, FILE_MAX_LINE, target) != NULL) {
 	/* TODO: Finish the loop*/
     }
 }
@@ -156,6 +172,7 @@ main(int argc, char *argv[])
 	    vars.used++;
 	}
 	if (state == IN_FLAG_FILE) {
+	    param = returnpath(param);
 	    files.array[files.used] = param;
 	    files.used++;
 	}
@@ -192,10 +209,14 @@ main(int argc, char *argv[])
 	fclose(targetIO);
     }
 
-    /* printf("vars: \n"); */
-    /* printarguments(&vars); */
-    /* printf("files: \n"); */
-    /* printarguments(&files); */
+    printf("vars: \n");
+    printarguments(&vars);
+    printf("files: \n");
+    printarguments(&files);
+
+    for (int i = 0; i < files.used; i++) {
+	free(files.array[i]);
+    }
 
     return 0;
 }
